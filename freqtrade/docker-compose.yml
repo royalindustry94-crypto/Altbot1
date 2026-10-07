@@ -1,0 +1,18 @@
+# Start:  docker compose up -d        Stop:  docker compose down
+# Screen: http://localhost:8080       (only reachable from this computer)
+services:
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    container_name: altbot
+    restart: unless-stopped
+    volumes:
+      - "./user_data:/freqtrade/user_data"
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file: .env
+    command: >
+      trade
+      --logfile /freqtrade/user_data/logs/freqtrade.log
+      --db-url sqlite:////freqtrade/user_data/tradesv3.dryrun.sqlite
+      --config /freqtrade/user_data/config.json
+      --strategy BuyTheDip

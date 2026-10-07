@@ -1,3 +1,6 @@
+> **Using Freqtrade now → open [`freqtrade/START-HERE.md`](freqtrade/START-HERE.md).**
+> The custom engine below is kept for reference.
+
 # altbot
 
 Personal, non-custodial spot trading engine. Funds never leave your exchange account.
