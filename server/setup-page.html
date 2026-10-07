@@ -1,0 +1,147 @@
+<title>Altbot Server Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow column of numbered steps (a real sequence), phone-first. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --fg:#14181f; --muted:#5b6472; --line:#dde1e7;
+  --accent:#a86b00; --accent-ink:#ffffff; --ok:#1d7a46; --warn:#a33b2b; --code:#eef0f3;
+  --display:"Sora",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1217; --surface:#171b22; --fg:#e8eaee; --muted:#9aa3b1; --line:#2a303a;
+  --accent:#e0a63a; --accent-ink:#161007; --ok:#4cc382; --warn:#ef7a66; --code:#1d222b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1217; --surface:#171b22; --fg:#e8eaee; --muted:#9aa3b1; --line:#2a303a;
+  --accent:#e0a63a; --accent-ink:#161007; --ok:#4cc382; --warn:#ef7a66; --code:#1d222b; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--body)}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:18px}
+header h1{font:700 1.6rem/1.2 var(--display);margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--muted)}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;min-width:0}
+.step h2{font:600 1.05rem/1.3 var(--display);margin:0;display:flex;gap:10px;align-items:baseline}
+.n{font:500 .8rem var(--mono);color:var(--accent);letter-spacing:.04em}
+ol,ul{margin:0;padding-left:1.2em;display:grid;gap:6px}
+b{font-weight:600}
+code{font:500 .88em var(--mono);background:var(--code);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+label{font-weight:600}
+input{font:500 .95rem var(--mono);width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:600 .95rem var(--body);border:0;border-radius:8px;padding:12px 16px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.err{color:var(--warn);font-size:.9rem;margin:0}
+.secret{font:500 1.1rem var(--mono);background:var(--code);padding:10px 12px;border-radius:8px;overflow-wrap:anywhere;flex:1 1 200px;min-width:0}
+textarea{font:400 .72rem/1.4 var(--mono);width:100%;box-sizing:border-box;height:180px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--code);color:var(--fg);resize:vertical}
+.note{color:var(--muted);font-size:.9rem;margin:0}
+.done{color:var(--ok);font-weight:600;font-size:.9rem}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Altbot server setup</h1>
+    <p>Puts your fake-money trading bot on a free Oracle Cloud server, running 24/7. You check on it from your phone. Takes about 20 minutes.</p>
+  </header>
+
+  <section class="step">
+    <h2><span class="n">STEP 1</span>Get the Tailscale app</h2>
+    <p class="note">Tailscale makes a private link between your phone and the server, so only you can open the bot.</p>
+    <ol>
+      <li>Install <b>Tailscale</b> from the Play Store and sign in (Google login is fine).</li>
+      <li>In your browser, open <a href="https://login.tailscale.com/admin/settings/keys" target="_blank" rel="noopener">login.tailscale.com/admin/settings/keys</a></li>
+      <li>Tap <b>Generate auth key</b>, leave the settings as they are, tap <b>Generate key</b>, and copy it. It starts with <code>tskey-auth-</code></li>
+    </ol>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">STEP 2</span>Build your setup script</h2>
+    <label for="tskey">Paste your Tailscale key</label>
+    <input id="tskey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="tskey-auth-...">
+    <p class="err" id="keyErr" hidden></p>
+    <div class="row"><button id="build" type="button">Build my script</button></div>
+    <p class="note">Everything happens on this page. Your key and password are never sent anywhere.</p>
+    <div id="out" hidden style="display:grid;gap:12px">
+      <div style="display:grid;gap:6px">
+        <label>Your bot password (save it in your notes now)</label>
+        <div class="row"><div class="secret" id="pw"></div><button class="ghost" type="button" id="copyPw">Copy</button></div>
+        <p class="note">Username: <code>trader</code></p>
+      </div>
+      <div style="display:grid;gap:6px">
+        <label for="script">Your setup script</label>
+        <textarea id="script" readonly></textarea>
+        <div class="row"><button type="button" id="copyScript">Copy script</button><span class="done" id="copied" hidden>Copied</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">STEP 3</span>Create the server on Oracle</h2>
+    <ol>
+      <li>Log in at <a href="https://cloud.oracle.com" target="_blank" rel="noopener">cloud.oracle.com</a>, tap the menu ☰ and go to <b>Compute → Instances</b>, then tap <b>Create instance</b>.</li>
+      <li><b>Name:</b> <code>altbot</code></li>
+      <li><b>Image:</b> tap <b>Change image</b> and choose <b>Ubuntu</b> (24.04).</li>
+      <li><b>Shape:</b> tap <b>Change shape</b> → <b>Ampere</b> → <b>VM.Standard.A1.Flex</b>, set <b>1 OCPU</b> and <b>6 GB</b> memory. It shows "Always Free eligible".</li>
+      <li><b>SSH keys:</b> leave <b>Generate a key pair for me</b> selected and tap <b>Save private key</b> (a spare way in, just in case).</li>
+      <li>Open <b>Show advanced options</b> → <b>Management</b> → <b>Paste cloud-init script</b>, and paste your setup script from Step 2.</li>
+      <li>Tap <b>Create</b>.</li>
+    </ol>
+    <p class="note">If it says <b>"Out of capacity"</b> for Ampere, choose shape <b>VM.Standard.E2.1.Micro</b> instead. It's also free.</p>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">STEP 4</span>Open your bot</h2>
+    <ol>
+      <li>Wait about <b>10 minutes</b> while the server sets itself up.</li>
+      <li>Make sure the Tailscale app is <b>on</b> on your phone.</li>
+      <li>Open <code>http://altbot:8080</code> in your phone's browser.</li>
+      <li>Log in with <code>trader</code> and your password.</li>
+    </ol>
+    <p class="note">If the page doesn't load after 15 minutes, tell Claude what you see.</p>
+  </section>
+</div>
+<script>
+var TEMPLATE = "#!/bin/bash\n# altbot first-boot setup (paper trading only). Log: /var/log/altbot-setup.log\nexec > /var/log/altbot-setup.log 2>&1\nset -euxo pipefail\n\n# 1. Swap (helps on small 1 GB servers)\nif [ ! -f /swapfile ]; then\n  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile\n  echo '/swapfile none swap sw 0 0' >> /etc/fstab\nfi\n\n# 2. Docker\ncurl -fsSL https://get.docker.com | sh\nsystemctl enable --now docker\n\n# 3. Tailscale (private link between this server and your phone)\ncurl -fsSL https://tailscale.com/install.sh | sh\ntailscale up --authkey='__TS_AUTHKEY__' --hostname=altbot\niptables -I INPUT 1 -i tailscale0 -j ACCEPT\nnetfilter-persistent save || true\n\n# 4. Bot files\nAPP=/opt/altbot\nmkdir -p $APP/user_data/strategies $APP/user_data/logs $APP/user_data/data\ncd $APP\ncat > docker-compose.yml <<'ALTBOT_EOF'\nservices:\n  freqtrade:\n    image: freqtradeorg/freqtrade:stable\n    container_name: altbot\n    restart: unless-stopped\n    volumes:\n      - \"./user_data:/freqtrade/user_data\"\n    ports:\n      - \"8080:8080\"\n    env_file: .env\n    command: >\n      trade\n      --logfile /freqtrade/user_data/logs/freqtrade.log\n      --db-url sqlite:////freqtrade/user_data/tradesv3.dryrun.sqlite\n      --config /freqtrade/user_data/config.json\n      --strategy BuyTheDip\nALTBOT_EOF\n\ncat > user_data/config.json <<'ALTBOT_EOF'\n{\n  \"$schema\": \"https://schema.freqtrade.io/schema.json\",\n  \"bot_name\": \"altbot\",\n  \"dry_run\": true,\n  \"dry_run_wallet\": 1000,\n  \"trading_mode\": \"spot\",\n  \"margin_mode\": \"\",\n  \"stake_currency\": \"USDT\",\n  \"stake_amount\": 150,\n  \"max_open_trades\": 5,\n  \"tradable_balance_ratio\": 0.8,\n  \"fiat_display_currency\": \"AUD\",\n  \"cancel_open_orders_on_exit\": false,\n  \"initial_state\": \"running\",\n  \"force_entry_enable\": false,\n  \"unfilledtimeout\": {\n    \"entry\": 10,\n    \"exit\": 10,\n    \"exit_timeout_count\": 0,\n    \"unit\": \"minutes\"\n  },\n  \"entry_pricing\": {\n    \"price_side\": \"same\",\n    \"use_order_book\": true,\n    \"order_book_top\": 1,\n    \"price_last_balance\": 0.0,\n    \"check_depth_of_market\": {\n      \"enabled\": false,\n      \"bids_to_ask_delta\": 1\n    }\n  },\n  \"exit_pricing\": {\n    \"price_side\": \"same\",\n    \"use_order_book\": true,\n    \"order_book_top\": 1\n  },\n  \"exchange\": {\n    \"name\": \"binance\",\n    \"key\": \"\",\n    \"secret\": \"\",\n    \"ccxt_config\": {},\n    \"ccxt_async_config\": {},\n    \"pair_whitelist\": [\n      \"ONDO/USDT\",\n      \"LINK/USDT\",\n      \"SUI/USDT\",\n      \"QNT/USDT\",\n      \"SAND/USDT\"\n    ],\n    \"pair_blacklist\": []\n  },\n  \"pairlists\": [\n    { \"method\": \"StaticPairList\" }\n  ],\n  \"telegram\": {\n    \"enabled\": false,\n    \"token\": \"\",\n    \"chat_id\": \"\"\n  },\n  \"api_server\": {\n    \"enabled\": true,\n    \"listen_ip_address\": \"0.0.0.0\",\n    \"listen_port\": 8080,\n    \"verbosity\": \"error\",\n    \"enable_openapi\": false,\n    \"CORS_origins\": []\n  },\n  \"internals\": {\n    \"process_throttle_secs\": 5\n  }\n}\nALTBOT_EOF\n\ncat > user_data/strategies/BuyTheDip.py <<'ALTBOT_EOF'\n\"\"\"\nBuyTheDip \u2014 starter strategy (method 1: buy the dip, sell the bounce).\n\nBuy when ALL are true on a closed 15m candle:\n  * RSI(14) is below 30            -> price has been falling hard (\"oversold\")\n  * close is below the lower Bollinger Band -> price is unusually low vs. its recent average\n  * volume is above zero           -> real trading happened\n\nSell when ANY is true:\n  * RSI(14) climbs above 60        -> the bounce has happened\n  * profit target hit (minimal_roi table below)\n  * loss reaches -8% (stoploss)    -> cut the loser, protect the account\n\nThis is a starting point for paper trading, not a proven money-maker.\nBacktest it first:  freqtrade backtesting --strategy BuyTheDip --timerange 20260101-\n\"\"\"\n\nfrom pandas import DataFrame\n\nimport talib.abstract as ta\nfrom freqtrade.strategy import IStrategy, IntParameter\nfrom technical import qtpylib\n\n\nclass BuyTheDip(IStrategy):\n    INTERFACE_VERSION = 3\n\n    timeframe = \"15m\"\n    can_short = False\n\n    # Take profit: +6% any time, +3% after 2h, +1% after 6h, break-even after 12h.\n    minimal_roi = {\n        \"0\": 0.06,\n        \"120\": 0.03,\n        \"360\": 0.01,\n        \"720\": 0.0,\n    }\n    stoploss = -0.08\n\n    process_only_new_candles = True\n    use_exit_signal = True\n    exit_profit_only = False\n    startup_candle_count = 30\n\n    # Tunable later with hyperopt.\n    buy_rsi = IntParameter(20, 40, default=30, space=\"buy\")\n    sell_rsi = IntParameter(50, 75, default=60, space=\"sell\")\n\n    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        dataframe[\"rsi\"] = ta.RSI(dataframe, timeperiod=14)\n        bb = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)\n        dataframe[\"bb_lower\"] = bb[\"lower\"]\n        dataframe[\"bb_mid\"] = bb[\"mid\"]\n        return dataframe\n\n    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        dataframe.loc[\n            (dataframe[\"rsi\"] < self.buy_rsi.value)\n            & (dataframe[\"close\"] < dataframe[\"bb_lower\"])\n            & (dataframe[\"volume\"] > 0),\n            [\"enter_long\", \"enter_tag\"],\n        ] = (1, \"rsi_bb_dip\")\n        return dataframe\n\n    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:\n        dataframe.loc[\n            (dataframe[\"rsi\"] > self.sell_rsi.value) & (dataframe[\"volume\"] > 0),\n            [\"exit_long\", \"exit_tag\"],\n        ] = (1, \"rsi_recovered\")\n        return dataframe\nALTBOT_EOF\n\ncat > .env <<'ALTBOT_EOF'\nFREQTRADE__API_SERVER__USERNAME=trader\nFREQTRADE__API_SERVER__PASSWORD=__UI_PASSWORD__\nFREQTRADE__API_SERVER__JWT_SECRET_KEY=__JWT_SECRET__\nFREQTRADE__API_SERVER__WS_TOKEN=__WS_TOKEN__\nALTBOT_EOF\nchmod 600 .env\nchown -R 1000:1000 user_data\n\n# 5. Start (restarts automatically after reboots and crashes)\ndocker compose up -d\necho \"ALTBOT SETUP COMPLETE\"\n";
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  function rand(chars, n){
+    var a = new Uint32Array(n), out = "";
+    crypto.getRandomValues(a);
+    for (var i = 0; i < n; i++) out += chars[a[i] % chars.length];
+    return out;
+  }
+  var ALNUM = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  var HEX = "0123456789abcdef";
+  function copy(text, el, label){
+    function done(){ el.textContent = "Copied"; setTimeout(function(){ el.textContent = label; }, 1800); }
+    try {
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+    } catch (e) { fallback(); }
+    function fallback(){
+      var t = $("script"); if (el.id === "copyPw") { var r = document.createRange(); r.selectNodeContents($("pw")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      else { t.focus(); t.select(); }
+      el.textContent = "Press and hold to copy";
+    }
+  }
+  $("build").addEventListener("click", function(){
+    var key = $("tskey").value.trim(), err = $("keyErr");
+    if (!/^tskey-[A-Za-z0-9_-]{10,}$/.test(key)) {
+      err.textContent = "That doesn't look like a Tailscale key. It should start with tskey-auth- and have no spaces.";
+      err.hidden = false; return;
+    }
+    err.hidden = true;
+    var pw = rand(ALNUM, 20);
+    var script = TEMPLATE
+      .replace("__TS_AUTHKEY__", key)
+      .replace("__UI_PASSWORD__", pw)
+      .replace("__JWT_SECRET__", rand(HEX, 48))
+      .replace("__WS_TOKEN__", rand(HEX, 32));
+    $("pw").textContent = pw;
+    $("script").value = script;
+    $("out").hidden = false;
+    $("out").scrollIntoView({behavior: "smooth", block: "start"});
+  });
+  $("copyPw").addEventListener("click", function(e){ copy($("pw").textContent, e.currentTarget, "Copy"); });
+  $("copyScript").addEventListener("click", function(e){ copy($("script").value, e.currentTarget, "Copy script"); });
+})();
+</script>
