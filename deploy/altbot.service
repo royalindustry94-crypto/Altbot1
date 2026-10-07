@@ -1,0 +1,28 @@
+# /etc/systemd/system/altbot.service
+#   sudo useradd --system --home /opt/altbot altbot
+#   sudo systemctl daemon-reload && sudo systemctl enable --now altbot
+#   journalctl -u altbot -f        |  tail -f /opt/altbot/logs/altbot.jsonl
+[Unit]
+Description=altbot spot trading engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=altbot
+WorkingDirectory=/opt/altbot
+EnvironmentFile=/opt/altbot/.env
+ExecStart=/opt/altbot/.venv/bin/python -m altbot run --config /opt/altbot/config.yaml
+Restart=always
+RestartSec=15
+# Hardening: the process can write only its own data and logs.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/altbot/data /opt/altbot/logs
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

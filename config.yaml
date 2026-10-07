@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  altbot configuration — validated on every start (`python -m altbot validate`)
+#  Changing this file requires a restart; its sha256 is logged at boot.
+# ═══════════════════════════════════════════════════════════════════════
+
+mode: paper            # paper   = live public prices, simulated fills, NO keys loaded
+                       # testnet = exchange sandbox, real API orders, fake money
+                       # live    = real money; ALSO needs env ALTBOT_LIVE_CONFIRM=I_ACCEPT_REAL_MONEY_RISK
+exchange: binance      # any ccxt id: binance, binanceus, kraken, coinbase, bybit, okx ...
+quote: USDT            # every coin trades against this (SOL -> SOL/USDT)
+
+loop_interval_s: 30          # engine tick period
+heartbeat_every_s: 300       # heartbeat log cadence
+unknown_order_grace_s: 120   # how long an ambiguous order may stay unconfirmed before it is ruled "never placed"
+
+db_path: data/altbot.sqlite3
+log_dir: logs
+kill_switch_file: KILL       # `touch KILL` = block all new orders immediately (no restart needed)
+env_file: .env               # must be chmod 600
+
+risk:
+  max_total_exposure_quote: 800   # never hold/commit more than this across all coins (keeps $200 dry powder)
+  max_per_coin_quote: 160         # $800 split evenly across 5 coins
+  max_open_orders_per_coin: 10
+  max_drawdown_pct: 15            # equity falls 15% from its peak -> persistent HALT
+  paper_starting_quote: 1000
+  paper_fee_bps: 10               # 0.10% per fill, simulated
+  paper_slippage_bps: 5           # market orders only
+
+# ── ALTCOIN SELECTOR ────────────────────────────────────────────────────
+# One entry per coin. `strategy` must be a name from `python -m altbot strategies`.
+# Set `enabled: false` to park a coin without deleting its settings.
+coins:
+  - symbol: ONDO      # real-world assets (stocks, gold) on-chain
+    strategy: watch
+  - symbol: LINK      # Chainlink: real-world price data
+    strategy: watch
+  - symbol: SUI       # trending layer-1
+    strategy: watch
+  - symbol: QNT       # Quant: recent big mover
+    strategy: watch
+  - symbol: SAND      # The Sandbox: cheap, high volume
+    strategy: watch
