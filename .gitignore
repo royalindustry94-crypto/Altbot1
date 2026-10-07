@@ -1,6 +1,6 @@
 .env
-data/
-logs/
+/data/
+/logs/
 KILL
 __pycache__/
 *.pyc
